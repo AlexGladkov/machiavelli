@@ -1,0 +1,25 @@
+{
+  "name": "machiavelli-core",
+  "version": "0.1.0",
+  "description": "Portable core: corporate ontology + intrigue advisor (fact -> advice vertical slice)",
+  "type": "commonjs",
+  "contract": "0.1.0",
+  "main": "machiavelli.cjs",
+  "bin": {
+    "machiavelli": "machiavelli.cjs"
+  },
+  "scripts": {
+    "smoke": "node tests/store.smoke.cjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.10.0"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "better-sqlite3-multiple-ciphers": "^13.0.3"
+  }
+}

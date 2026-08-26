@@ -1,0 +1,185 @@
+# Machiavelli — Host Brief (shared invariants for all adapters)
+
+This document defines the shared contract that every Machiavelli host adapter must honour.
+It covers: the CLI envelope format, guard verdicts, the facts-vs-interpretations invariant,
+privacy rules, and the --dry / ingest portability pattern.
+
+Do NOT modify these invariants per adapter. They are enforced by the core and must be
+reflected consistently in every host's UI layer.
+
+---
+
+## 1. CLI invocation
+
+The core is a Node.js CLI at:
+
+```
+{{CORE_PATH}}/core/machiavelli.cjs
+```
+
+Every command follows this pattern:
+
+```bash
+node {{CORE_PATH}}/core/machiavelli.cjs <cmd> [positionals] [flags] --json
+```
+
+Always pass `--json` when calling from a host adapter. Human-formatted output (without --json)
+is for interactive TTY use only and must never be parsed by an adapter.
+
+Minimum Node.js version required: 20.
+
+---
+
+## 2. Envelope contract
+
+Every command returns a single JSON object on stdout:
+
+```json
+{
+  "ok": true | false,
+  "cmd": "<command-name>",
+  "data": { ... },
+  "error": null | { "code": "...", "message": "...", "retryable": false },
+  "meta": { ... }
+}
+```
+
+Rules:
+- `ok: true`  — command succeeded; consume `data`.
+- `ok: false` — command failed; consume `error.code` and `error.message`. `data` may be partial.
+- Exit codes: 0 = success (even when ok:false), 1 = internal error, 2 = bad args/consent,
+  3 = environment error (Node too old, no SQLite, missing key).
+- Parse stdout as JSON. Stderr is human-readable diagnostics — do not parse it.
+
+---
+
+## 3. Guard verdicts
+
+The ethical guardrail is always enforced on `advice` and `daily` commands.
+It runs a validator pass after the LLM generates a response.
+
+Possible verdicts returned in `meta.guard.verdict`:
+- `pass`   — advice is clean; render `data.advice` / `data.text`.
+- `rewrite` — advice was automatically cleaned; `data.advice` is the cleaned version.
+- `block`  — advice was blocked; `ok: false`, `error.code = "GUARD_BLOCK"`.
+
+On `GUARD_BLOCK`:
+1. Do NOT render any advice text — there is none.
+2. Show `error.message` as the reason.
+3. Tell the user to rephrase the query toward legitimate influence, not direct harm.
+
+On `GUARD_UNAVAILABLE` (LLM not configured):
+1. `ok: false`, `error.code = "GUARD_UNAVAILABLE"`.
+2. Tell the user to set `MACH_LLM_KEY` or configure a local provider.
+
+---
+
+## 4. Facts vs. interpretations (hard invariant — never violate)
+
+| Source | Label in UI | Mutable? |
+|--------|-------------|----------|
+| User-recorded facts (`facts` table) | "Факт:" | No — immutable, append-only |
+| LLM-generated lens profiles | "Интерпретация (disc/leverage/bigfive):" | Yes — regenerable |
+| LLM-suggested relations (pending) | "Подсказка (не подтверждено):" | Yes — pending until confirmed |
+| Advice output | No special label needed | Regenerable |
+
+Rules:
+- Never present a LLM-generated interpretation as a user fact.
+- Never present a pending relation as a confirmed edge.
+- When rendering advice, clearly separate the factual context from the interpretation context.
+
+---
+
+## 5. Privacy and data handling
+
+- Facts and profiles are sent to the LLM provider configured via `MACH_LLM_KEY`.
+- For local privacy: set `MACH_LLM_URL=http://localhost:11434/v1` and `MACH_LLM_MODEL=<model>`.
+- The database is encrypted at rest (AES-256-GCM). Never log raw key values.
+- Pseudonym mode (`aliasMode: true`) replaces real names with codes in prompts.
+- Never expose `data/` paths, encryption keys, or raw database bytes in host UI output.
+- Host adapters must not log or cache raw fact bodies outside of the core's own storage.
+
+---
+
+## 6. Portability pattern: --dry → own LLM → ingest
+
+Hosts that do NOT have a `MACH_LLM_KEY` configured (or prefer to run their own inference)
+can use the two-step portability pattern:
+
+### Step A — get the compiled prompt (--dry)
+
+```bash
+node {{CORE_PATH}}/core/machiavelli.cjs advice "<query>" --dry --json
+# or:
+node {{CORE_PATH}}/core/machiavelli.cjs profile <personRef> --dry --json
+```
+
+With `--dry`, the core:
+- Assembles all context (ego facts, graph, profiles).
+- Builds the full prompt (system + user message).
+- Returns the prompt in `data.prompt` WITHOUT calling any LLM.
+- No consent gate is triggered.
+
+```json
+{
+  "ok": true,
+  "cmd": "advice",
+  "data": { "advice": null, "prompt": "...<full compiled prompt>..." },
+  "meta": { "dry": true, "factsUsed": 3, "lenses": ["disc"] }
+}
+```
+
+### Step B — run your own LLM
+
+Pass `data.prompt` to your host's inference engine (the host's built-in model, a sidebar
+LLM, or any OpenAI-compatible endpoint). Receive the generated text.
+
+### Step C — ingest the result back
+
+```bash
+node {{CORE_PATH}}/core/machiavelli.cjs ingest profile <personRef> \
+  --lens <lens> --body "<generated-text>" --json
+# or pipe via stdin:
+echo "<generated-text>" | node {{CORE_PATH}}/core/machiavelli.cjs ingest profile <personRef> \
+  --lens <lens> --stdin --json
+```
+
+`ingest` stores the externally-generated interpretation in the database as `model: "external"`.
+It bypasses the LLM provider entirely — no `MACH_LLM_KEY` needed.
+
+The `advice` command result cannot be ingested back (it is ephemeral). Only profile
+interpretations have an ingest path. For advice, render `data.prompt` directly to your LLM
+and present the raw response to the user.
+
+---
+
+## 7. Key environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `MACH_LLM_KEY` | Yes for advice/profile | LLM API key. Anthropic format or any non-empty string for local. |
+| `MACH_LLM_URL` | No | Base URL for OpenAI-compatible API. Empty = Anthropic default. |
+| `MACH_LLM_MODEL` | No | Model name override. Default set in core/config.cjs. |
+| `MACH_KEY` | No | DB encryption key. If absent, keyring (macOS Keychain / libsecret) is used. |
+| `MACH_NAMES_KEY` | No | Separate encryption key for the pseudonym map. Falls back to MACH_KEY. |
+
+---
+
+## 8. Commands reference
+
+| Command | Positionals | Key flags | LLM needed? |
+|---------|-------------|-----------|-------------|
+| `init` | [name] | `--json` | No |
+| `person` | "<description>" | `--json` | No |
+| `fact` | <personRef> "<fact>" | `--json` | No |
+| `profile` | <personRef> | `--lens disc,leverage,bigfive` `--dry` `--regen` `--consent` | Yes (unless --dry) |
+| `advice` | "<query>" | `--dry` `--consent` `--as <personRef>` | Yes (unless --dry) |
+| `daily` | (none) | `--dry` `--consent` `--as <personRef>` | Yes (unless --dry) |
+| `graph` | | `--person <ref>` | No |
+| `relation` | `confirm <edge_id>` or `list` | `--json` | No |
+| `status` | | `--json` | No |
+| `doctor` | | `--json` | Yes (LLM ping) |
+| `version` | | `--json` | No |
+| `key` | `export [--kind data\|names]` or `import --kind X --value <hex>` | `--json` | No |
+| `rekey` | | `--kind data\|names` `--value <hex>` `--confirm` | No |
+| `ingest` | `profile <personRef>` | `--lens <lens>` `--body <text>` or `--stdin` | No |

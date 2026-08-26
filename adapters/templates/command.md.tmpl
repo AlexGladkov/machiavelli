@@ -1,0 +1,50 @@
+---
+name: mach-{{CMD}}
+description: Machiavelli — {{CMD}} command. Thin adapter: shells out to the core CLI and renders the result.
+user_invocable: true
+---
+
+# /mach-{{CMD}}
+
+Thin wrapper around the Machiavelli core CLI. All business logic lives in the core; this file
+only handles argument collection, shell-out, and result rendering.
+
+## Core path
+
+```
+{{CORE_PATH}}/core/machiavelli.cjs
+```
+
+## Invocation pattern
+
+```bash
+node {{CORE_PATH}}/core/machiavelli.cjs {{CMD}} [args] --json
+```
+
+## Envelope format
+
+Every core command returns a JSON envelope on stdout:
+
+```json
+{
+  "ok": true,
+  "cmd": "{{CMD}}",
+  "data": { ... },
+  "error": null,
+  "meta": { ... }
+}
+```
+
+Exit codes:
+- `0` — success (even when `ok: false` in envelope)
+- `1` — internal error
+- `2` — bad args / consent
+- `3` — environment error (Node too old, no SQLite driver, missing key)
+
+## Adapter rules
+
+1. Parse `$ARGUMENTS` first. If empty — ask the user the minimal required questions.
+2. Shell out with `--json`. Never run without `--json` (human output is for TTY only).
+3. Check `ok` in the envelope. On `ok: false` — show `error.message` and `error.code` clearly.
+4. Render `data` in a readable format. Do NOT log or expose raw key values.
+5. This adapter does NOT duplicate core logic. If something is not in `data`, do not invent it.

@@ -1,0 +1,9 @@
+data/
+*.db
+*.db-wal
+*.db-shm
+*.enc
+*.map
+*.key
+.env
+node_modules/
