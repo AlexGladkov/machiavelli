@@ -8,6 +8,14 @@ Portable corporate ontology and strategic advisor. Models the people, relationsh
 
 ## Install
 
+**curl**
+
 ```bash
-git clone https://github.com/AlexGladkov/machiavelli && cd machiavelli && bash install.sh
+curl -fsSL https://raw.githubusercontent.com/AlexGladkov/machiavelli/main/install.sh | bash
+```
+
+**brew**
+
+```bash
+brew install AlexGladkov/machiavelli/machiavelli
 ```

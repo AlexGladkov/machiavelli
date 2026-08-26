@@ -60,8 +60,22 @@ if [ "$NODE_MAJOR" -lt 20 ]; then
 fi
 ok "Node.js $(node --version) — OK"
 
-# ── 2. Resolve CORE_PATH ─────────────────────────────────────────────────────
-CORE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ── 2. Resolve CORE_PATH (bootstrap if piped: curl … | bash) ─────────────────
+CORE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || pwd)"
+if [[ ! -f "${CORE_PATH}/core/machiavelli.cjs" ]]; then
+  # Run via `curl … | bash` — no repo on disk. Clone it ourselves.
+  REPO_URL="${MACH_REPO:-https://github.com/AlexGladkov/machiavelli.git}"
+  TARGET="${MACH_HOME:-$HOME/.machiavelli}"
+  command -v git >/dev/null 2>&1 || fail "git is required to bootstrap the install"
+  if [[ -d "${TARGET}/.git" ]]; then
+    info "Updating existing checkout at ${TARGET}"
+    git -C "${TARGET}" pull --ff-only --quiet || warn "git pull failed; using existing checkout"
+  else
+    info "Cloning ${REPO_URL} → ${TARGET}"
+    git clone --depth 1 --quiet "${REPO_URL}" "${TARGET}" || fail "git clone failed"
+  fi
+  CORE_PATH="${TARGET}"
+fi
 info "CORE_PATH = $CORE_PATH"
 
 # ── 3. SQLite driver check ───────────────────────────────────────────────────
