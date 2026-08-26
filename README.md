@@ -17,5 +17,5 @@ curl -fsSL https://raw.githubusercontent.com/AlexGladkov/machiavelli/main/instal
 **brew**
 
 ```bash
-brew install AlexGladkov/machiavelli/machiavelli
+brew install AlexGladkov/tap/machiavelli
 ```
