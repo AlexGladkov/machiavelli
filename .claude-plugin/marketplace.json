@@ -1,0 +1,15 @@
+{
+  "schema": "1.0",
+  "name": "machiavelli",
+  "owner": "AlexGladkov",
+  "repository": "https://github.com/AlexGladkov/machiavelli",
+  "plugins": [
+    {
+      "name": "machiavelli",
+      "source": "./",
+      "category": "productivity",
+      "description": "Portable corporate ontology and strategic advisor. Records immutable facts about people, builds psycho-profiles via pluggable lenses, and generates ethical strategic advice from your ego perspective.",
+      "tags": ["advisor", "strategy", "corporate", "ontology", "privacy"]
+    }
+  ]
+}

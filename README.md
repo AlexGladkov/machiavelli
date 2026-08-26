@@ -8,14 +8,10 @@ Portable corporate ontology and strategic advisor. Models the people, relationsh
 
 ## Install
 
-**curl**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/AlexGladkov/machiavelli/main/install.sh | bash
-```
-
-**brew**
-
-```bash
-brew install AlexGladkov/tap/machiavelli
-```
+| Channel | Command |
+|---------|---------|
+| **Claude plugin** | `claude plugin marketplace add AlexGladkov/machiavelli` then `claude plugin install machiavelli@machiavelli` |
+| **curl** | `curl -fsSL https://raw.githubusercontent.com/AlexGladkov/machiavelli/main/install.sh \| bash` |
+| **brew** | `brew install AlexGladkov/tap/machiavelli` |
+| **Codex** | `bash install.sh --host codex` — auto-wires `~/.codex/AGENTS.md` + `hooks.json` |
+| **pi / OpenCode** | `pi install git:github.com/AlexGladkov/machiavelli` |

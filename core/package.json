@@ -15,11 +15,9 @@
     "node": ">=20"
   },
   "optionalDependencies": {
-    "better-sqlite3": "^11.10.0"
+    "better-sqlite3": "^11.10.0",
+    "better-sqlite3-multiple-ciphers": "^13.0.3"
   },
   "license": "UNLICENSED",
-  "private": true,
-  "dependencies": {
-    "better-sqlite3-multiple-ciphers": "^13.0.3"
-  }
+  "private": true
 }

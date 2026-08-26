@@ -1,0 +1,17 @@
+{
+  "name": "machiavelli",
+  "version": "0.1.0",
+  "description": "Portable corporate ontology and strategic advisor. Models people, relationships and power dynamics as an ego-centric knowledge base, then generates advice from your perspective with an ethical guardrail.",
+  "author": {
+    "name": "AlexGladkov",
+    "url": "https://github.com/AlexGladkov"
+  },
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "components": {
+    "commands": "commands/",
+    "agents": "agents/"
+  }
+}

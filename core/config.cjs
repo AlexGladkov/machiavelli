@@ -5,6 +5,15 @@ const os = require('node:os');
 const path = require('node:path');
 const { AppError } = require('./store/errors.cjs');
 
+// XDG-compliant default data directory.
+// Precedence: XDG_DATA_HOME env > ~/.local/share > fallback.
+// Keeps user data in $HOME, never in the install/plugin directory.
+function xdgDataDir() {
+  const xdg = process.env.XDG_DATA_HOME;
+  const base = xdg && xdg.trim() ? xdg.trim() : path.join(os.homedir(), '.local', 'share');
+  return path.join(base, 'machiavelli');
+}
+
 /**
  * Flat config resolution, done BEFORE the DB is opened.
  *
@@ -98,7 +107,7 @@ function resolveConfig(flags = {}, env = process.env, opts = {}) {
     aliasMode = toBool(file.aliasMode, true);
   }
 
-  const dataDir = firstDefined(env.MACH_DATA_DIR, file.dataDir, path.join(root, 'data'));
+  const dataDir = firstDefined(env.MACH_DATA_DIR, file.dataDir, xdgDataDir());
   const corePath = firstDefined(file.corePath, __dirname);
   const defaultModel = firstDefined(flags.model, env.MACH_LLM_MODEL, file.defaultModel, DEFAULT_MODEL);
   const provider = firstDefined(
