@@ -1,5 +1,9 @@
 # Machiavelli
 
+<p align="center">
+  <img src="assets/machiavelli.png" alt="Machiavelli" width="640">
+</p>
+
 Portable corporate ontology and strategic advisor. Models the people, relationships, and
 power dynamics in your organization as an ego-centric knowledge base. Generates advice from
 your perspective using recorded facts and psycho-profiles — with an ethical guardrail built in.
@@ -9,46 +13,13 @@ Built on the Palantir ontology model: Objects (people, places, documents) + Rela
 
 ---
 
-## Installation
-
-Requires Node.js >= 20. Run once — idempotent:
+## Install
 
 ```bash
-bash install.sh                    # Claude Code (default)
-bash install.sh --host codex       # Codex adapter
-bash install.sh --host opencode    # OpenCode adapter
-bash install.sh --host all         # All three adapters
+git clone https://github.com/AlexGladkov/machiavelli && cd machiavelli && bash install.sh
 ```
 
-The installer:
-- Checks Node >= 20 (halts if not met)
-- Optionally installs `better-sqlite3` (needed for Node < 22.5; Node >= 22.5 uses built-in SQLite)
-- Creates `data/` with `.gitignore` (all contents excluded from git)
-- Renders adapter files with the correct absolute path (substitutes `{{CORE_PATH}}`)
-- Writes core path to `~/.config/machiavelli/config.json`
-- Runs `node core/machiavelli.cjs status --json` as a final health check
-
-### Per-host installation targets
-
-| Host | Installed to | Notes |
-|------|-------------|-------|
-| `claude` | `~/.claude/commands/mach-*.md`, `~/.claude/agents/machiavelli-advisor.md` | Commands available as `/mach-*` |
-| `codex` | `~/.config/machiavelli/adapters/codex/` | Follow on-screen wiring instructions |
-| `opencode` | `~/.config/machiavelli/adapters/opencode/` | Follow on-screen wiring instructions |
-
-After install, set your LLM key:
-
-```bash
-export MACH_LLM_KEY=sk-ant-...   # Anthropic (default)
-```
-
-For a local model (Ollama, LM Studio, OpenRouter, Z.AI):
-
-```bash
-export MACH_LLM_URL=http://localhost:11434/v1
-export MACH_LLM_MODEL=llama3.2
-export MACH_LLM_KEY=ollama        # any non-empty string for local
-```
+Then set your LLM key: `export MACH_LLM_KEY=sk-ant-...` — or point `MACH_LLM_URL` at any OpenAI-compatible / local model (Ollama, Z.AI, OpenRouter). Adapters: `bash install.sh --host codex|opencode|all`.
 
 ---
 
